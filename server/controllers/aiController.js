@@ -204,37 +204,36 @@ export const resumeReview = async (req, res) => {
   try {
     const { userId } = req.auth();
     const resume = req.file;
-    const plan = req.plan;
 
-    if (plan !== "premium") {
-      return res.json({
-        success: false,
-        message: "This feature is only available for premium subscriptions",
-      });
+    if (!resume) {
+      console.error("❌ No file received");
+      return res.json({ success: false, message: "No file uploaded." });
     }
 
-    if (resume.size > 5 * 1024 * 1024) {
-      return res.json({
-        success: false,
-        message: "Resume file size exceeds allowed size (5MB).",
-      });
-    }
+    console.log("✅ File received:", resume.path);
 
     const dataBuffer = fs.readFileSync(resume.path);
     const pdfData = await pdf(dataBuffer);
 
-    const prompt = `Review the following resume and provide constructive feedback on its strengths, weaknesses, and areas for improvement. Resume Content: \n\n ${pdfData.text}`;
+    const prompt = `
+    Review this resume and provide professional, actionable feedback.
+    Identify key strengths, weaknesses, missing information, formatting issues, and improvement suggestions.
+    Resume content:
+    ${pdfData.text}
+    `;
 
+    console.log("🧠 Sending prompt to Mistral AI...");
     const content = await callMistralAI(prompt, 1000);
 
     await sql`
       INSERT INTO creations (user_id, prompt, content, type)
-      VALUES (${userId}, 'Review the uploaded resume', ${content}, 'resume-review')
+      VALUES (${userId}, 'AI Resume Review', ${content}, 'resume-review')
     `;
 
+    console.log("✅ Resume review completed successfully");
     res.json({ success: true, content });
   } catch (error) {
-    console.log(error.message);
-    res.json({ success: false, message: error.message });
+    console.error("❌ Resume review failed:", error.response?.data || error.message);
+    res.json({ success: false, message: "Failed to analyze resume." });
   }
 };
