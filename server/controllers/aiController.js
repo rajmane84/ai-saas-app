@@ -77,7 +77,16 @@ export const generateBlogTitle = async (req, res) => {
       });
     }
 
-    const content = await callMistralAI(prompt, 300);
+    let content = await callMistralAI(prompt, 300);
+
+    // 🧹 Clean unwanted tokens like <s> [OUT] ... [/OUT]
+    content = content
+      .replace(/<s>\s*\[OUT\]\s*/gi, "") // remove starting tokens
+      .replace(/\s*\[\/OUT\]\s*<\/s>/gi, "") // remove closing tokens
+      .replace(/<\/?s>/gi, "") // remove stray <s> or </s>
+      .replace(/\[OUT\]/gi, "") // remove [OUT] if alone
+      .replace(/\[\/OUT\]/gi, "") // remove [/OUT] if alone
+      .trim();
 
     await sql`
       INSERT INTO creations (user_id, prompt, content, type)
@@ -153,7 +162,12 @@ export const removeImageBackground = async (req, res) => {
     }
 
     const { secure_url } = await cloudinary.uploader.upload(image.path, {
-      transformation: [{ effect: "background_removal", background_removal: "remove_the_background" }],
+      transformation: [
+        {
+          effect: "background_removal",
+          background_removal: "remove_the_background",
+        },
+      ],
     });
 
     await sql`
@@ -233,7 +247,10 @@ export const resumeReview = async (req, res) => {
     console.log("✅ Resume review completed successfully");
     res.json({ success: true, content });
   } catch (error) {
-    console.error("❌ Resume review failed:", error.response?.data || error.message);
+    console.error(
+      "❌ Resume review failed:",
+      error.response?.data || error.message
+    );
     res.json({ success: false, message: "Failed to analyze resume." });
   }
 };

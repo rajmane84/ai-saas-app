@@ -32,21 +32,31 @@ const BlogTitles = () => {
       setLoading(true);
       const prompt = `Generate a blog title for the keyword ${input} in the category ${selectedCategory}`;
 
+      const token = await getToken();
+      // console.log("🔑 Token:", token ? "Present" : "Missing");
+
       const { data } = await axios.post(
-        "/api/ai/generate-blog-title",
+        `${axios.defaults.baseURL}/api/ai/generate-blog-title`,
         { prompt },
-        { headers: { Authorization: `Bearer ${await getToken()}` } }
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
       );
+
+      // console.log("🛰️ Response from backend:", data);
 
       if (data.success) {
         setContent(data.content);
+        toast.success("Titles generated successfully!");
       } else {
-        toast.error(data.message);
+        toast.error(data.message || "Something went wrong");
       }
     } catch (error) {
+      console.error("❌ Error generating titles:", error);
       toast.error(error.message);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const copyToClipboard = async () => {
@@ -75,7 +85,8 @@ const BlogTitles = () => {
               </h1>
             </div>
             <p className="text-slate-600 text-lg max-w-2xl mx-auto">
-              Transform your ideas into compelling blog titles with the power of AI
+              Transform your ideas into compelling blog titles with the power of
+              AI
             </p>
           </div>
 
@@ -128,10 +139,10 @@ const BlogTitles = () => {
                         onClick={() => setSelectedCategory(item)}
                         className={`text-xs font-medium px-4 py-3 border-2 rounded-xl cursor-pointer 
                                  transition-all duration-300 transform hover:scale-105 ${
-                          selectedCategory === item
-                            ? "bg-gradient-to-r from-[#FF8000] to-[#FFD033] text-white border-transparent shadow-lg shadow-orange-200"
-                            : "text-slate-600 border-slate-200 bg-white/50 hover:border-[#6A5ACD] hover:text-[#6A5ACD] hover:bg-purple-50"
-                        }`}
+                                   selectedCategory === item
+                                     ? "bg-gradient-to-r from-[#FF8000] to-[#FFD033] text-white border-transparent shadow-lg shadow-orange-200"
+                                     : "text-slate-600 border-slate-200 bg-white/50 hover:border-[#6A5ACD] hover:text-[#6A5ACD] hover:bg-purple-50"
+                                 }`}
                         key={item}
                       >
                         {item}
@@ -171,10 +182,11 @@ const BlogTitles = () => {
 
             {/* Right Column - Results */}
             <div className="w-full xl:flex-1">
-              <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 
+              <div
+                className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 
                             min-h-[400px] lg:min-h-[600px] transition-all duration-300 
-                            hover:shadow-2xl hover:bg-white/90 flex flex-col">
-                
+                            hover:shadow-2xl hover:bg-white/90 flex flex-col"
+              >
                 {/* Results Header */}
                 <div className="p-6 lg:p-8 border-b border-slate-100">
                   <div className="flex items-center justify-between">
@@ -186,7 +198,7 @@ const BlogTitles = () => {
                         Generated Titles
                       </h2>
                     </div>
-                    
+
                     {content && (
                       <button
                         onClick={copyToClipboard}
@@ -215,38 +227,60 @@ const BlogTitles = () => {
                   {!content ? (
                     <div className="h-full flex justify-center items-center">
                       <div className="text-center">
-                        <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-r from-[#0066FF] to-[#FF8000] 
-                                      rounded-2xl flex items-center justify-center transform rotate-12">
+                        <div
+                          className="w-20 h-20 mx-auto mb-6 bg-gradient-to-r from-[#0066FF] to-[#FF8000] 
+                                      rounded-2xl flex items-center justify-center transform rotate-12"
+                        >
                           <Hash className="w-10 h-10 text-white transform -rotate-12" />
                         </div>
                         <h3 className="text-lg font-semibold text-slate-600 mb-2">
                           Ready to Create Amazing Titles?
                         </h3>
                         <p className="text-slate-500 max-w-md">
-                          Enter your keyword and select a category to generate compelling blog titles powered by AI
+                          Enter your keyword and select a category to generate
+                          compelling blog titles powered by AI
                         </p>
                       </div>
                     </div>
                   ) : (
                     <div className="h-full overflow-y-auto">
                       <div className="prose prose-slate max-w-none">
-                        <div className="bg-gradient-to-r from-slate-50 to-blue-50 rounded-xl p-6 
-                                      border-l-4 border-[#FF8000] shadow-inner">
-                          <Markdown 
-                            className="text-slate-700 leading-relaxed"
-                            components={{
-                              h1: ({ children }) => <h1 className="text-xl font-bold text-slate-800 mb-3">{children}</h1>,
-                              h2: ({ children }) => <h2 className="text-lg font-semibold text-slate-700 mb-2">{children}</h2>,
-                              p: ({ children }) => <p className="mb-3 text-slate-600">{children}</p>,
-                              ul: ({ children }) => <ul className="space-y-2 mb-4">{children}</ul>,
-                              li: ({ children }) => <li className="flex items-start gap-2 text-slate-600">
-                                <span className="w-1.5 h-1.5 bg-[#FF8000] rounded-full mt-2 flex-shrink-0"></span>
-                                <span>{children}</span>
-                              </li>,
-                            }}
-                          >
-                            {content}
-                          </Markdown>
+                        <div
+                          className="bg-gradient-to-r from-slate-50 to-blue-50 rounded-xl p-6 
+                                      border-l-4 border-[#FF8000] shadow-inner"
+                        >
+                          <div className="text-slate-700 leading-relaxed">
+                            <Markdown
+                              components={{
+                                h1: ({ children }) => (
+                                  <h1 className="text-xl font-bold text-slate-800 mb-3">
+                                    {children}
+                                  </h1>
+                                ),
+                                h2: ({ children }) => (
+                                  <h2 className="text-lg font-semibold text-slate-700 mb-2">
+                                    {children}
+                                  </h2>
+                                ),
+                                p: ({ children }) => (
+                                  <p className="mb-3 text-slate-600">
+                                    {children}
+                                  </p>
+                                ),
+                                ul: ({ children }) => (
+                                  <ul className="space-y-2 mb-4">{children}</ul>
+                                ),
+                                li: ({ children }) => (
+                                  <li className="flex items-start gap-2 text-slate-600">
+                                    <span className="w-1.5 h-1.5 bg-[#FF8000] rounded-full mt-2 flex-shrink-0"></span>
+                                    <span>{children}</span>
+                                  </li>
+                                ),
+                              }}
+                            >
+                              {content}
+                            </Markdown>
+                          </div>
                         </div>
                       </div>
                     </div>
