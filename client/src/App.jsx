@@ -1,26 +1,39 @@
-import React from 'react'
-import { Route, Routes } from 'react-router-dom'
-import Home from './pages/Home'
-import Layout from './pages/Layout'
-import Dashboard from './pages/Dashboard'
-import WriteArticle from './pages/WriteArticle'
-import BlogTitles from './pages/BlogTitles'
-import GenerateImages from './pages/GenerateImages'
-import RemoveBackground from './pages/RemoveBackground'
-import RemoveObject from './pages/RemoveObject'
-import ReviewResume from './pages/ReviewResume'
-import Community from './pages/Community'
+import { Navigate, Route, Routes } from 'react-router-dom'
+import {
+  Home,
+  Layout,
+  Dashboard,
+  WriteArticle,
+  BlogTitles,
+  GenerateImages,
+  RemoveBackground,
+  RemoveObject,
+  ReviewResume,
+  Community
+} from "./pages"
 import { useAuth } from '@clerk/clerk-react'
 import { useEffect } from 'react'
 import { Toaster } from 'react-hot-toast'
+import { Loader } from 'lucide-react'
 
 const App = () => {
+
+  const { isSignedIn, isLoaded } = useAuth()
+
+  if (!isLoaded) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        {/* TODO: Add a skeleton */}
+        <Loader />
+      </div>
+    )
+  }
   
   return (
     <div>
       <Toaster />
       <Routes>
-        <Route path='/' element={<Home />} />
+        <Route path='/' element={isSignedIn ? <Navigate to="/ai" replace /> : <Home />}  />
         <Route path='/ai' element={<Layout />}>
           <Route index element={<Dashboard />} />
           <Route path='write-article' element={<WriteArticle />} />
